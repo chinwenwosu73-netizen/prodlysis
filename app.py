@@ -18,8 +18,9 @@ from flask import (
 from prodlysis import ai, compare, parsers, report, store
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
+# Use store's resilient DATA_DIR (falls back to a writable temp dir on
+# read-only filesystems like Vercel serverless).
+DATA_DIR = store.DATA_DIR
 
 # Load API keys from .env in the product folder (never stored in the app).
 load_dotenv(os.path.join(BASE_DIR, ".env"))
