@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <h1>Turn raw analytics into <span class="hero-accent">clear UX decisions</span>.</h1>
+      <p class="hero-sub">
+        Prodlysis compares analytics reports across any period, pinpoints what improved or regressed, and hands teams building and analyzing product data actionable, AI-powered recommendations.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="{{ url_for('compare_page') }}">✨ Get Insights</a>
+        <a class="btn btn-ghost" href="{{ url_for('about_page') }}">Learn more</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="stat">9+</div><div class="muted">UX metrics</div></div>
+        <div class="hero-stat"><div class="stat">&lt;10s</div><div class="muted">analysis time</div></div>
+        <div class="hero-stat"><div class="stat">100</div><div class="muted">health score</div></div>
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-card-stack">
+        <img src="{{ url_for('static', filename='img/hero-chart.svg') }}" alt="UX metrics trend chart" style="width:100%;max-width:380px;border-radius:16px" />
+        <div class="hero-mini">
+          <div class="hm-icon">🎯</div>
+          <div>
+            <div class="hm-value">Drop-offs ↓ 35.7%</div>
+            <div class="hm-label">Checkout flow friction</div>
+          </div>
+        </div>
+        <div class="hero-mini">
+          <div class="hm-icon">💡</div>
+          <div>
+            <div class="hm-value">Health Score 92/100</div>
+            <div class="hm-label">UX Health ↑ +18 pts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<div class="section-head">
+  <h2>Everything a data team needs</h2>
+  <p>From a single report to full before/after comparisons — all in one place.</p>
+</div>
+<div class="grid grid-3">
+  <div class="card feature-card">
+    <div class="feature-icon">�</div>
+    <h3>Metric Dashboards</h3>
+    <p>Clear visual summaries of every metric — sessions, drop-offs, rage clicks, scroll depth, and more — at a glance.</p>
+  </div>
+  <div class="card feature-card">
+    <div class="feature-icon">📈</div>
+    <h3>Compare Two Reports</h3>
+    <p>Measure the impact of your changes. See exact percentage changes, improvements, regressions, and likely causes.</p>
+  </div>
+  <div class="card feature-card">
+    <div class="feature-icon">🧩</div>
+    <h3>Data Explorer</h3>
+    <p>Upload from any analytics platform (CSV / JSON) or paste metrics — Clarity, GA4, Mixpanel, PostHog, and more.</p>
+  </div>
+  <div class="card feature-card">
+    <div class="feature-icon">📄</div>
+    <h3>Export &amp; Reports</h3>
+    <p>Generate presentation-ready PDF or Markdown reports with an executive summary, metric table, findings, and next steps.</p>
+  </div>
+  <div class="card feature-card">
+    <div class="feature-icon">💾</div>
+    <h3>Report History</h3>
+    <p>Save analyses and compare any two saved periods later. Your data is stored locally.</p>
+  </div>
+  <div class="card feature-card">
+    <div class="feature-icon">🛡️</div>
+    <h3>Private by default</h3>
+    <p>Uploads are processed and discarded unless you save them. API keys live in a local config file.</p>
+  </div>
+</div>
+
+<!-- ============ DATA STRIP ============ -->
+<div class="grid grid-3" style="margin-top:28px">
+  <div class="card" style="display:flex;align-items:center;gap:16px;padding:16px">
+    <img src="{{ url_for('static', filename='img/friction.svg') }}" alt="Friction metrics" style="width:120px;height:auto;flex-shrink:0" />
+    <div>
+      <h3 style="margin:0 0 4px;font-size:15px">Friction at a glance</h3>
+      <p class="muted" style="margin:0;font-size:13px">Rage clicks, dead clicks, drop-offs — tracked and compared.</p>
+    </div>
+  </div>
+  <div class="card" style="display:flex;align-items:center;gap:16px;padding:16px">
+    <img src="{{ url_for('static', filename='img/compare-table.svg') }}" alt="Period comparison table" style="width:120px;height:auto;flex-shrink:0" />
+    <div>
+      <h3 style="margin:0 0 4px;font-size:15px">Before / After</h3>
+      <p class="muted" style="margin:0;font-size:13px">Exact deltas per metric with health score.</p>
+    </div>
+  </div>
+  <div class="card" style="display:flex;align-items:center;gap:16px;padding:16px">
+    <img src="{{ url_for('static', filename='img/sessions-chart.svg') }}" alt="Sessions bar chart" style="width:120px;height:auto;flex-shrink:0" />
+    <div>
+      <h3 style="margin:0 0 4px;font-size:15px">Trends over time</h3>
+      <p class="muted" style="margin:0;font-size:13px">Spot patterns across weekly or monthly periods.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HOW IT WORKS ============ -->
+<div class="mt" style="margin-top:56px">
+  <div class="section-head">
+    <h2>How it works</h2>
+    <p>Three steps to a clearer product.</p>
+  </div>
+  <div class="steps">
+    <div class="card step">
+      <div class="step-num">1</div>
+      <h3>Upload</h3>
+      <p>Paste metrics or upload a CSV/JSON export from any analytics platform.</p>
+    </div>
+    <div class="card step">
+      <div class="step-num">2</div>
+      <h3>Analyze</h3>
+      <p>Prodlysis scores UX health, flags problems, and suggests fixes.</p>
+    </div>
+    <div class="card step">
+      <div class="step-num">3</div>
+      <h3>Compare</h3>
+      <p>After changes, compare with a new report to verify what worked.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LATEST + RECENT ============ -->
+<div class="mt" style="margin-top:56px">
+  <div class="section-head">
+    <h2>{% if latest %}Your latest analysis{% else %}Your workspace{% endif %}</h2>
+  </div>
+
+  {% if latest %}
+    <div class="grid grid-2">
+      <div class="card health-card">
+        <h3>UX Health</h3>
+        <div class="health-ring" style="background: conic-gradient(var(--pink) {{ latest.health }}%, var(--border) 0)">
+          <div class="ring-inner">
+            <div class="stat score">{{ latest.health }}</div>
+            <div class="max">/ 100</div>
+          </div>
+        </div>
+        {% if latest.health_delta is defined %}
+          <div class="health-delta {{ 'up' if latest.health_delta >= 0 else 'down' }}">
+            {{ '↑' if latest.health_delta >= 0 else '↓' }} {{ '%+d'|format(latest.health_delta) }} points
+          </div>
+        {% endif %}
+      </div>
+      <div class="card">
+        <h3>{{ latest.previous_label }} vs {{ latest.current_label }}</h3>
+        <div class="muted" style="margin-bottom:10px">{{ latest.created_at }}</div>
+        {% for m in latest.metrics[:5] %}
+          <div class="row" style="justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border)">
+            <span>{{ m.label }}</span>
+            <span class="row" style="gap:8px">
+              <span class="stat">{{ m.change_display }}</span>
+              <span class="badge {{ m.status }}">{{ m.status }}</span>
+            </span>
+          </div>
+        {% endfor %}
+        <a class="btn btn-ghost btn-sm mt" href="{{ url_for('report_page', report_id=request.cookies.get('latest_report_id', '')) }}"
+           {% if not request.cookies.get('latest_report_id') %}style="pointer-events:none;opacity:.5"{% endif %}>View full report →</a>
+      </div>
+    </div>
+  {% else %}
+    <div class="card empty">
+      <div class="big">📊</div>
+      <p>No analysis yet. Run your first one to see health scores and reports here.</p>
+      <a class="btn btn-primary" href="{{ url_for('compare_page') }}">Get Started →</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ============ RECENT REPORTS ============ -->
+<div class="mt" style="margin-top:56px">
+  <div class="row" style="justify-content:space-between; margin-bottom:12px">
+    <h2 class="font-heading" style="margin:0">Recent Reports</h2>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('history_page') }}">View all</a>
+  </div>
+  {% if history %}
+    {% for r in history[:4] %}
+      <a class="history-item" href="{{ url_for('report_page', report_id=r.id) }}">
+        <div>
+          <div class="hi-title">{{ r.title }}</div>
+          <div class="hi-meta">{{ r.created_at }} · Health {{ r.analysis.health }}/100</div>
+        </div>
+        <div class="hi-score">{{ r.analysis.health }}</div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <div class="card empty">
+      <div class="big">🗂️</div>
+      <p>Your saved reports will appear here.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

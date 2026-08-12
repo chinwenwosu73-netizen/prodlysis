@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 220" role="img" aria-label="Weekly sessions bar chart">
+  <defs>
+    <linearGradient id="b4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF7FB"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="340" height="220" rx="16" fill="url(#b4)"/>
+  <text x="18" y="28" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1F2937">Sessions</text>
+
+  <g>
+    <rect x="34" y="150" width="28" height="50" rx="5" fill="#FCE7F3"/>
+    <rect x="78" y="130" width="28" height="70" rx="5" fill="#F9A8D4"/>
+    <rect x="122" y="100" width="28" height="100" rx="5" fill="#EC4899"/>
+    <rect x="166" y="80" width="28" height="120" rx="5" fill="#DB2777"/>
+    <rect x="210" y="60" width="28" height="140" rx="5" fill="#9D174D"/>
+    <rect x="254" y="50" width="28" height="150" rx="5" fill="#701A41"/>
+  </g>
+
+  <g font-family="Inter, sans-serif" font-size="10" fill="#9CA3AF">
+    <text x="30" y="212">W1</text>
+    <text x="74" y="212">W2</text>
+    <text x="118" y="212">W3</text>
+    <text x="162" y="212">W4</text>
+    <text x="206" y="212">W5</text>
+    <text x="250" y="212">W6</text>
+  </g>
+  <line x1="18" y1="200" x2="290" y2="200" stroke="#F4D3E4"/>
+</svg>

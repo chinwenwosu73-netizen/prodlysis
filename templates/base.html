@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Prodlysis{% endblock %} · Prodlysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="{{ url_for('dashboard') }}">
+        <span class="brand-mark">P</span>
+        <span class="brand-text">PRODLYSIS</span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ url_for('dashboard') }}" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('compare_page') }}" class="{% if request.path == '/compare' %}active{% endif %}">Compare</a>
+        <a href="{{ url_for('history_page') }}" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+        <a href="{{ url_for('settings_page') }}" class="{% if request.path == '/settings' %}active{% endif %}">Settings</a>
+        <a href="{{ url_for('about_page') }}" class="{% if request.path == '/about' %}active{% endif %}">About</a>
+      </div>
+      <div class="nav-right">
+        <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">◐</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>Prodlysis · AI-Powered UX Analysis &amp; Product Insights for data teams</p>
+  </footer>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+    // Theme persistence (dark mode ready)
+    (function () {
+      try {
+        var t = localStorage.getItem('prodlysis-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        var btn = document.getElementById('theme-toggle');
+        if (btn) btn.addEventListener('click', function () {
+          var cur = document.documentElement.getAttribute('data-theme');
+          var next = cur === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('prodlysis-theme', next);
+        });
+      } catch (e) {}
+    })();
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

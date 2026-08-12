@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1 class="page-title">Settings</h1>
+<p class="page-sub">Manage your profile, security, and preferences.</p>
+
+<div class="grid grid-2">
+  <!-- Profile -->
+  <div class="card">
+    <h3>Profile</h3>
+    <div class="row" style="align-items:flex-start; gap:18px">
+      <div class="avatar-upload">
+        <img id="avatar-preview" class="avatar-lg" src="{{ profile.avatar }}" alt="Avatar" />
+        <label class="btn btn-ghost btn-sm" style="margin-top:8px; display:inline-block; cursor:pointer">
+          Upload photo
+          <input type="file" id="avatar-input" accept="image/*" hidden />
+        </label>
+      </div>
+      <div style="flex:1">
+        <div class="field">
+          <label>Name</label>
+          <input class="input" id="p-name" value="{{ profile.name }}" placeholder="Your name" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input class="input" id="p-email" value="{{ profile.email }}" placeholder="you@company.com" />
+        </div>
+        <div class="field">
+          <label>Job title</label>
+          <input class="input" id="p-title" value="{{ profile.job_title }}" placeholder="e.g. Product Manager, Analyst, Founder" />
+        </div>
+        <button class="btn btn-primary" id="save-profile">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div class="card">
+    <h3>Security</h3>
+    <p class="settings-hint">Set a local password. Login (email / Google) isn't wired yet — this password will be honored once authentication lands.</p>
+    <div class="field">
+      <label>Current password</label>
+      <input class="input" type="password" id="pw-current" placeholder="Leave blank on first set" autocomplete="current-password" />
+    </div>
+    <div class="field">
+      <label>New password</label>
+      <input class="input" type="password" id="pw-new" placeholder="At least 8 characters" autocomplete="new-password" />
+    </div>
+    <div class="field">
+      <label>Confirm new password</label>
+      <input class="input" type="password" id="pw-confirm" placeholder="Repeat new password" autocomplete="new-password" />
+    </div>
+    <button class="btn btn-primary" id="save-password">Update Password</button>
+  </div>
+
+  <!-- Preferences -->
+  <div class="card">
+    <h3>Preferences</h3>
+    <div class="field">
+      <label>Theme</label>
+      <select class="input" id="pref-theme">
+        <option value="light" {{ 'selected' if profile.preferences.theme == 'light' }}>Light</option>
+        <option value="dark" {{ 'selected' if profile.preferences.theme == 'dark' }}>Dark</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Language</label>
+      <select class="input" id="pref-language">
+        <option value="en" {{ 'selected' if profile.preferences.language == 'en' }}>English</option>
+        <option value="es" {{ 'selected' if profile.preferences.language == 'es' }}>Español</option>
+        <option value="fr" {{ 'selected' if profile.preferences.language == 'fr' }}>Français</option>
+        <option value="de" {{ 'selected' if profile.preferences.language == 'de' }}>Deutsch</option>
+        <option value="pt" {{ 'selected' if profile.preferences.language == 'pt' }}>Português</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Default export format</label>
+      <select class="input" id="pref-export">
+        <option value="markdown" {{ 'selected' if profile.preferences.default_export == 'markdown' }}>Markdown</option>
+        <option value="pdf" {{ 'selected' if profile.preferences.default_export == 'pdf' }}>PDF</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="row" style="gap:10px; justify-content:flex-start">
+        <input type="checkbox" id="pref-notify" {{ 'checked' if profile.preferences.notifications }} />
+        Email me weekly report summaries (coming in Phase 2)
+      </label>
+    </div>
+    <button class="btn btn-primary" id="save-preferences">Save Preferences</button>
+  </div>
+
+  <!-- AI Engine status -->
+  <div class="card">
+    <h3>AI Engine</h3>
+    <div class="field">
+      <label>Status</label>
+      {% if has_ai %}
+        <p class="muted" style="margin:0">
+          <span class="badge positive">✓ Connected</span><br/>
+          Provider: <b>{{ configured_provider }}</b> — analyses will use the live model.
+        </p>
+      {% else %}
+        <p class="muted" style="margin:0">
+          <span class="badge unchanged">Not connected</span><br/>
+          Using the built-in engine. Add your key to <code>.env</code> in the product folder and restart.
+        </p>
+      {% endif %}
+    </div>
+    <div class="field">
+      <label>Config file</label>
+      <p class="settings-hint" style="margin:0">Edit <code>.env</code> in the product folder, then restart the app (<code>./run.sh</code>).</p>
+      <div class="code" style="font-size:12px">AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-...</div>
+    </div>
+  </div>
+
+  <!-- Data & Privacy -->
+  <div class="card">
+    <h3>Data &amp; Privacy</h3>
+    <p class="settings-hint">Manage your locally stored data. Uploads are processed and discarded unless you save a report.</p>
+    <div class="row">
+      <button class="btn btn-ghost" id="export-data">Export my data</button>
+      <button class="btn btn-ghost" id="clear-history">Clear report history</button>
+    </div>
+    <div class="mt" style="border-top:1px solid var(--border); padding-top:14px">
+      <p class="muted" style="font-size:13px;margin:0 0 10px">Danger zone — resets all reports and profile data.</p>
+      <button class="btn btn-ghost" id="clear-all" style="border-color:var(--danger);color:var(--danger)">Reset all data</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    // ---- Avatar upload (client-side resize to keep storage small) ----
+    var avatarInput = document.getElementById('avatar-input');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function () {
+        var file = avatarInput.files && avatarInput.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var img = new Image();
+          img.onload = function () {
+            var canvas = document.createElement('canvas');
+            var size = 256;
+            canvas.width = size; canvas.height = size;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, size, size);
+            var dataUri = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('avatar-preview').src = dataUri;
+            window.__avatar = dataUri;
+            showToast('Photo selected — save your profile to apply');
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ---- Save profile ----
+    var saveProfile = document.getElementById('save-profile');
+    if (saveProfile) saveProfile.addEventListener('click', function () {
+      var body = {
+        name: document.getElementById('p-name').value,
+        email: document.getElementById('p-email').value,
+        job_title: document.getElementById('p-title').value,
+      };
+      if (window.__avatar) body.avatar = window.__avatar;
+      fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.error) return showToast(d.error, true);
+          showToast('Profile saved');
+        })
+        .catch(function () { showToast('Failed to save profile', true); });
+    });
+
+    // ---- Save password ----
+    var savePassword = document.getElementById('save-password');
+    if (savePassword) savePassword.addEventListener('click', function () {
+      var body = {
+        current_password: document.getElementById('pw-current').value,
+        new_password: document.getElementById('pw-new').value,
+        confirm_password: document.getElementById('pw-confirm').value,
+      };
+      fetch('/api/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.error) return showToast(d.error, true);
+          showToast('Password updated');
+          ['pw-current', 'pw-new', 'pw-confirm'].forEach(function (id) {
+            document.getElementById(id).value = '';
+          });
+        })
+        .catch(function () { showToast('Failed to update password', true); });
+    });
+
+    // ---- Save preferences ----
+    var savePrefs = document.getElementById('save-preferences');
+    if (savePrefs) savePrefs.addEventListener('click', function () {
+      var body = {
+        theme: document.getElementById('pref-theme').value,
+        language: document.getElementById('pref-language').value,
+        default_export: document.getElementById('pref-export').value,
+        notifications: document.getElementById('pref-notify').checked,
+      };
+      fetch('/api/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.error) return showToast(d.error, true);
+          // Apply theme immediately
+          document.documentElement.setAttribute('data-theme', body.theme);
+          try { localStorage.setItem('prodlysis-theme', body.theme); } catch (e) {}
+          showToast('Preferences saved');
+        })
+        .catch(function () { showToast('Failed to save preferences', true); });
+    });
+
+    // ---- Export data ----
+    var exportBtn = document.getElementById('export-data');
+    if (exportBtn) exportBtn.addEventListener('click', function () {
+      fetch('/api/profile')
+        .then(function (r) { return r.json(); })
+        .then(function (profile) {
+          return fetch('/api/reports').then(function (r) { return r.json(); })
+            .then(function (reports) {
+              var payload = JSON.stringify({ profile: profile, reports: reports }, null, 2);
+              var blob = new Blob([payload], { type: 'application/json' });
+              var a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'prodlysis-data.json';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              showToast('Data exported');
+            });
+        })
+        .catch(function () { showToast('Export failed', true); });
+    });
+
+    // ---- Clear history ----
+    var clearHistory = document.getElementById('clear-history');
+    if (clearHistory) clearHistory.addEventListener('click', function () {
+      fetch('/api/reports').then(function (r) { return r.json(); })
+        .then(function (reports) {
+          return Promise.all(reports.map(function (r) {
+            return fetch('/api/reports/' + r.id, { method: 'DELETE' });
+          }));
+        })
+        .then(function () { showToast('Report history cleared'); })
+        .catch(function () { showToast('Failed to clear history', true); });
+    });
+
+    // ---- Reset all ----
+    var clearAll = document.getElementById('clear-all');
+    if (clearAll) clearAll.addEventListener('click', function () {
+      if (!confirm('Reset ALL data? This deletes every saved report and your profile.')) return;
+      fetch('/api/clear-data', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.ok) { showToast('All data reset'); setTimeout(function () { location.reload(); }, 900); }
+        })
+        .catch(function () { showToast('Failed to reset', true); });
+    });
+  })();
+</script>
+{% endblock %}

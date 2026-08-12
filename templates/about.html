@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<h1 class="page-title">About Prodlysis</h1>
+<p class="page-sub">AI-Powered UX Analysis &amp; Product Insights for data teams</p>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>What is Prodlysis?</h3>
+    <p>Prodlysis is an AI-powered analytics comparison platform that helps anyone building and analyzing product data compare reports across different periods, identify UX improvements, calculate percentage changes in key metrics, and generate actionable recommendations.</p>
+    <p>Instead of manually comparing dashboards, you upload or paste data from two time periods (from any analytics platform) and Prodlysis automatically:</p>
+    <ul style="padding-left:20px;margin:8px 0">
+      <li>Detects UX issues</li>
+      <li>Compares previous and current performance</li>
+      <li>Calculates improvements or regressions</li>
+      <li>Explains likely causes with confidence scores</li>
+      <li>Suggests UI improvements</li>
+      <li>Generates executive-ready reports (PDF / Markdown / clipboard)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Vision</h3>
+    <p>Become the easiest AI-powered product analytics companion for anyone who builds, ships, and analyzes product data.</p>
+    <h3 class="mt">Who it's for</h3>
+    <ul style="padding-left:20px;margin:8px 0">
+      <li>Product Managers · Associate PMs · Product Owners</li>
+      <li>UX Designers · Product Analysts · Data Analysts</li>
+      <li>Startup Founders · Growth Teams · Engineers</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>How it works</h3>
+    <ol style="padding-left:20px;margin:8px 0">
+      <li><b>Upload</b> reports from any analytics platform (CSV / JSON) or paste metrics.</li>
+      <li><b>Compare</b> automatically — percentage changes, improved/regressed status.</li>
+      <li><b>Analyze</b> — AI findings with evidence, likely causes, and confidence.</li>
+      <li><b>Recommend</b> — prioritized, actionable UI improvements.</li>
+      <li><b>Export</b> — presentation-ready PDF or Markdown report.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>Supported metrics</h3>
+    <p class="muted">Sessions · Drop-offs · Drop-off Rate · Rage Clicks · Dead Clicks · Scroll Depth · Session Duration · Bounce Rate · Conversion Rate</p>
+    <h3 class="mt">Works with any analytics source</h3>
+    <p class="muted">Upload CSVs or paste metrics from Microsoft Clarity, Google Analytics, Mixpanel, PostHog, Hotjar, Amplitude, and more — or your own spreadsheets.</p>
+    <h3 class="mt">Roadmap</h3>
+    <ul style="padding-left:20px;margin:8px 0">
+      <li><b>Phase 2:</b> Direct platform integrations, heatmaps, funnels, session recording summaries, weekly email reports.</li>
+      <li><b>Phase 3:</b> GA4, Mixpanel, Hotjar, PostHog, Amplitude, Jira/Linear ticket creation, Slack notifications.</li>
+    </ul>
+    <p class="settings-hint mt">Version 0.2.0 · Python Flask + ReportLab · AI: OpenAI / Anthropic / DeepSeek</p>
+  </div>
+</div>
+{% endblock %}

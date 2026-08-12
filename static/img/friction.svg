@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 200" role="img" aria-label="Friction metrics dashboard">
+  <defs>
+    <linearGradient id="b2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF7FB"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="260" height="200" rx="16" fill="url(#b2)"/>
+  <text x="18" y="28" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1F2937">Friction</text>
+
+  <!-- Rage clicks bar -->
+  <text x="18" y="62" font-family="Inter, sans-serif" font-size="11" fill="#6B7280">Rage Clicks</text>
+  <rect x="18" y="70" width="150" height="14" rx="7" fill="#FCE7F3"/>
+  <rect x="18" y="70" width="150" height="14" rx="7" fill="#EC4899"/>
+  <text x="176" y="82" font-family="Space Grotesk, sans-serif" font-size="12" font-weight="600" fill="#1F2937">180</text>
+
+  <!-- Dead clicks bar -->
+  <text x="18" y="112" font-family="Inter, sans-serif" font-size="11" fill="#6B7280">Dead Clicks</text>
+  <rect x="18" y="120" width="150" height="14" rx="7" fill="#FCE7F3"/>
+  <rect x="18" y="120" width="128" height="14" rx="7" fill="#F9A8D4"/>
+  <text x="176" y="132" font-family="Space Grotesk, sans-serif" font-size="12" font-weight="600" fill="#1F2937">95</text>
+
+  <!-- Drop-off bar -->
+  <text x="18" y="162" font-family="Inter, sans-serif" font-size="11" fill="#6B7280">Drop-off</text>
+  <rect x="18" y="170" width="150" height="14" rx="7" fill="#FCE7F3"/>
+  <rect x="18" y="170" width="72" height="14" rx="7" fill="#FBBF24"/>
+  <text x="176" y="182" font-family="Space Grotesk, sans-serif" font-size="12" font-weight="600" fill="#1F2937">42%</text>
+</svg>

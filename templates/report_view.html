@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Report{% endblock %}
+{% block content %}
+<div class="row" style="justify-content:space-between; margin-bottom:20px">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px">{{ report.title }}</h1>
+    <p class="page-sub" style="margin:0">
+      {{ analysis.previous_label }} vs {{ analysis.current_label }} · {{ report.created_at }}
+    </p>
+  </div>
+  <div class="row">
+    <button class="btn btn-ghost btn-sm" id="copy-btn">📋 Copy</button>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('api_report_markdown', report_id=report.id) }}">⬇ Markdown</a>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('api_report_pdf', report_id=report.id) }}">⬇ PDF</a>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card health-card">
+    <h3>UX Health</h3>
+    <div class="health-ring" style="background: conic-gradient(var(--pink) {{ analysis.health }}%, var(--border) 0)">
+      <div class="ring-inner">
+        <div class="stat score">{{ analysis.health }}</div>
+        <div class="max">/ 100</div>
+      </div>
+    </div>
+    <div class="health-delta {{ 'up' if analysis.health_delta >= 0 else 'down' }}">
+      {{ '↑' if analysis.health_delta >= 0 else '↓' }} {{ '%+d'|format(analysis.health_delta) }} points
+    </div>
+    <div class="muted mt">Compared {{ analysis.num_compared }} metrics:
+      <b>{{ analysis.num_improved }}</b> improved, <b>{{ analysis.num_regressed }}</b> regressed.</div>
+  </div>
+
+  <div class="card">
+    <h3>Executive Summary</h3>
+    <p>{{ analysis.summary }}</p>
+    <h3 class="mt">Questions &amp; Answers</h3>
+    {% for q in analysis.questions %}
+      <p style="margin:4px 0"><b>{{ q.question }}</b><br/><span class="muted">{{ q.answer }}</span></p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card mt">
+  <h3>Metrics Comparison</h3>
+  <div class="table-wrap">
+    <table class="metrics">
+      <thead>
+        <tr><th>Metric</th><th>{{ analysis.previous_label }}</th><th>{{ analysis.current_label }}</th><th>Change</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for m in analysis.metrics %}
+          <tr>
+            <td>{{ m.label }}</td>
+            <td class="stat">{{ m.previous_display }}</td>
+            <td class="stat">{{ m.current_display }}</td>
+            <td class="stat">{{ m.change_display }}</td>
+            <td><span class="badge {{ m.status }}">{{ m.status }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h3>Findings</h3>
+    {% for f in analysis.findings %}
+      <div class="finding">
+        <div class="f-title">
+          <span class="badge {{ f.severity }}">{{ '✓' if f.severity == 'positive' else '!' }}</span>
+          {{ f.title }}
+          {% if f.confidence is defined %}<span class="confidence">{{ f.confidence }}%</span>{% endif %}
+        </div>
+        <ul>{% for e in f.evidence %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% if f.cause %}<div class="cause"><b>Likely cause:</b> {{ f.cause }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h3>Recommendations</h3>
+    <ul class="rec-list">
+      {% for r in analysis.recommendations %}
+        <li>
+          <span class="rec-check">✓</span>
+          <div>
+            <div><span class="badge {{ r.priority }}">{{ r.priority }}</span></div>
+            <div style="margin-top:2px">{{ r.text }}</div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+    <h3 class="mt">Next Steps</h3>
+    <ol class="muted" style="margin:0;padding-left:20px">
+      {% for r in analysis.next_steps %}
+        <li>{{ r.text if r is mapping else r }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('copy-btn').addEventListener('click', function () {
+    fetch('{{ url_for("api_report_markdown", report_id=report.id) }}')
+      .then(function (r) { return r.text(); })
+      .then(function (md) { return navigator.clipboard.writeText(md); })
+      .then(function () { showToast('Report copied to clipboard'); });
+  });
+</script>
+{% endblock %}

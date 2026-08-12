@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Env / secrets
+.env
+
+# App data
+data/
+
+# OS / editor
+.DS_Store
+.vscode/

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}History{% endblock %}
+{% block content %}
+<h1 class="page-title">Report History</h1>
+<p class="page-sub">Your saved analyses. Compare any two periods, reopen a report, or export it.</p>
+
+{% if reports %}
+  {% for r in reports %}
+    <div class="history-item" data-id="{{ r.id }}">
+      <div style="flex:1">
+        <a href="{{ url_for('report_page', report_id=r.id) }}" style="text-decoration:none;color:inherit">
+          <div class="hi-title">{{ r.title }}</div>
+          <div class="hi-meta">
+            {{ r.created_at }} ·
+            {{ r.analysis.previous_label }} vs {{ r.analysis.current_label }} ·
+            {{ r.analysis.num_improved }} improved · {{ r.analysis.num_regressed }} regressed
+          </div>
+        </a>
+      </div>
+      <a class="hi-score" href="{{ url_for('report_page', report_id=r.id) }}" style="text-decoration:none;color:inherit">{{ r.analysis.health }}</a>
+      <button class="btn btn-ghost btn-sm delete-btn" data-id="{{ r.id }}">Delete</button>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card empty">
+    <div class="big">🗂️</div>
+    <p>No saved reports yet. Run a comparison and press <b>Save to History</b>.</p>
+    <a class="btn btn-primary" href="{{ url_for('compare_page') }}">Compare Reports →</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.delete-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var id = btn.getAttribute('data-id');
+      fetch('/api/reports/' + id, { method: 'DELETE' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            btn.closest('.history-item').remove();
+            showToast('Report deleted');
+          } else {
+            showToast(data.error || 'Failed to delete', true);
+          }
+        });
+    });
+  });
+</script>
+{% endblock %}

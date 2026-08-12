@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Analyze{% endblock %}
+{% block content %}
+
+<div class="page-heading">
+  <h1 class="page-title">Analyze</h1>
+  <p class="page-sub">Analyze a single report, or compare two reports to measure the impact of your changes.</p>
+</div>
+
+<!-- Mode toggle -->
+<div class="mode-switch" role="tablist">
+  <button class="mode-btn active" data-mode="single" role="tab" id="mode-single">✨ Single Report Insights</button>
+  <button class="mode-btn" data-mode="compare" role="tab" id="mode-compare">📊 Compare Two Reports</button>
+</div>
+
+<div class="grid grid-2">
+  <!-- Input panel -->
+  <div class="card">
+    <div id="single-input">
+      <h3>Analyze a Single Report</h3>
+      <p class="muted" style="font-size:13px;margin-top:0">Identify UX problems, get UI revamp suggestions, and a health score for one analytics report.</p>
+
+      <div class="field">
+        <label>Report label (e.g. July)</label>
+        <input class="input" id="single-label" placeholder="Current" value="Current" />
+      </div>
+
+      <div class="field">
+        <label>Upload report</label>
+        <label class="dropzone" id="dz-single" for="file-single">
+          <input type="file" id="file-single" accept=".csv,.json,.txt,text/csv,application/json" />
+          <div class="dz-title">📄 Choose file</div>
+          <div class="dz-hint">Drop a CSV/JSON export from any analytics platform, or click to browse</div>
+          <div class="dz-file hidden"></div>
+        </label>
+      </div>
+
+      <div class="or-divider">OR</div>
+
+      <div class="field">
+        <label>Paste metrics</label>
+        <textarea class="input" id="manual-single" placeholder="Drop-off Rate: 42%&#10;Rage Clicks: 118&#10;Dead Clicks: 91&#10;Scroll Depth: 46%&#10;Session Duration: 1m 10s"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="insights-btn">Get Insights</button>
+    </div>
+
+    <div id="compare-input" class="hidden">
+      <h3>Compare Two Reports</h3>
+      <p class="muted" style="font-size:13px;margin-top:0">Compare before/after changes to see improvements or regressions.</p>
+
+      <div class="field">
+        <label>Previous period label (e.g. June)</label>
+        <input class="input" id="prev-label" placeholder="Previous" value="Previous" />
+      </div>
+      <div class="field">
+        <label>Current period label (e.g. July)</label>
+        <input class="input" id="curr-label" placeholder="Current" value="Current" />
+      </div>
+
+      <div class="field">
+        <label>Upload previous report</label>
+        <label class="dropzone" id="dz-prev" for="file-prev">
+          <input type="file" id="file-prev" accept=".csv,.json,.txt,text/csv,application/json" />
+          <div class="dz-title">📄 Choose previous file</div>
+          <div class="dz-hint">Drop a CSV/JSON export from any analytics platform, or click to browse</div>
+          <div class="dz-file hidden"></div>
+        </label>
+      </div>
+
+      <div class="field">
+        <label>Upload current report</label>
+        <label class="dropzone" id="dz-curr" for="file-curr">
+          <input type="file" id="file-curr" accept=".csv,.json,.txt,text/csv,application/json" />
+          <div class="dz-title">📄 Choose current file</div>
+          <div class="dz-hint">Drop a CSV/JSON export from any analytics platform, or click to browse</div>
+          <div class="dz-file hidden"></div>
+        </label>
+      </div>
+
+      <div class="or-divider">OR</div>
+
+      <div class="field">
+        <label>Paste previous metrics</label>
+        <textarea class="input" id="manual-prev" placeholder="Drop-off Rate: 42%&#10;Rage Clicks: 118&#10;Dead Clicks: 91&#10;Scroll Depth: 46%&#10;Session Duration: 1m 10s"></textarea>
+      </div>
+      <div class="field">
+        <label>Paste current metrics</label>
+        <textarea class="input" id="manual-curr" placeholder="Drop-off Rate: 27%&#10;Rage Clicks: 64&#10;Dead Clicks: 52&#10;Scroll Depth: 68%&#10;Session Duration: 2m 01s"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="analyze-btn">Analyze Reports</button>
+    </div>
+  </div>
+
+  <!-- Results panel -->
+  <div class="card">
+    <h3>Results</h3>
+    <div id="results" class="results-placeholder">
+      <div class="empty">
+        <div class="big">✨</div>
+        <p>Your insights will appear here — health score, findings, and recommendations.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="report-actions" class="hidden" style="margin-top:20px">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h3 style="margin:0">Export Report</h3>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" id="save-btn">💾 Save to History</button>
+        <button class="btn btn-ghost btn-sm" id="copy-btn">📋 Copy</button>
+        <button class="btn btn-ghost btn-sm" id="md-btn">⬇ Markdown</button>
+        <button class="btn btn-primary btn-sm" id="pdf-btn">⬇ PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Sample data loaders
+  const sampleSingle = [
+    "Sessions: 2400",
+    "Drop-off Rate: 42%",
+    "Rage Clicks: 118",
+    "Dead Clicks: 91",
+    "Scroll Depth: 46%",
+    "Session Duration: 1m 10s",
+    "Bounce Rate: 38%",
+    "Conversion Rate: 3.2%"
+  ].join("\n");
+  const samplePrev = [
+    "Sessions: 2400",
+    "Drop-off Rate: 42%",
+    "Rage Clicks: 118",
+    "Dead Clicks: 91",
+    "Scroll Depth: 46%",
+    "Session Duration: 1m 10s",
+    "Bounce Rate: 38%",
+    "Conversion Rate: 3.2%"
+  ].join("\n");
+  const sampleCurr = [
+    "Sessions: 2650",
+    "Drop-off Rate: 27%",
+    "Rage Clicks: 64",
+    "Dead Clicks: 52",
+    "Scroll Depth: 68%",
+    "Session Duration: 2m 01s",
+    "Bounce Rate: 31%",
+    "Conversion Rate: 4.1%"
+  ].join("\n");
+
+  // Auto-fill samples on first load so users can try instantly
+  (function () {
+    var s = document.getElementById('manual-single');
+    var p = document.getElementById('manual-prev');
+    var c = document.getElementById('manual-curr');
+    if (s && !s.value) s.value = sampleSingle;
+    if (p && !p.value) p.value = samplePrev;
+    if (c && !c.value) c.value = sampleCurr;
+  })();
+</script>
+{% endblock %}
