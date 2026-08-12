@@ -10,6 +10,9 @@ venv/
 # App data
 data/
 
+# Local tooling
+bin/
+
 # OS / editor
 .DS_Store
 .vscode/
