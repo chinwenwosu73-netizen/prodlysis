@@ -24,14 +24,12 @@
       <div class="hero-card-stack">
         <img src="{{ url_for('static', filename='img/hero-chart.svg') }}" alt="UX metrics trend chart" style="width:100%;max-width:380px;border-radius:16px" />
         <div class="hero-mini">
-          <div class="hm-icon">🎯</div>
           <div>
             <div class="hm-value">Drop-offs ↓ 35.7%</div>
             <div class="hm-label">Checkout flow friction</div>
           </div>
         </div>
         <div class="hero-mini">
-          <div class="hm-icon">💡</div>
           <div>
             <div class="hm-value">Health Score 92/100</div>
             <div class="hm-label">UX Health ↑ +18 pts</div>
@@ -49,32 +47,26 @@
 </div>
 <div class="grid grid-3">
   <div class="card feature-card">
-    <div class="feature-icon">�</div>
     <h3>Metric Dashboards</h3>
     <p>Clear visual summaries of every metric — sessions, drop-offs, rage clicks, scroll depth, and more — at a glance.</p>
   </div>
   <div class="card feature-card">
-    <div class="feature-icon">📈</div>
     <h3>Compare Two Reports</h3>
     <p>Measure the impact of your changes. See exact percentage changes, improvements, regressions, and likely causes.</p>
   </div>
   <div class="card feature-card">
-    <div class="feature-icon">🧩</div>
     <h3>Data Explorer</h3>
     <p>Upload from any analytics platform (CSV / JSON) or paste metrics — Clarity, GA4, Mixpanel, PostHog, and more.</p>
   </div>
   <div class="card feature-card">
-    <div class="feature-icon">📄</div>
     <h3>Export &amp; Reports</h3>
     <p>Generate presentation-ready PDF or Markdown reports with an executive summary, metric table, findings, and next steps.</p>
   </div>
   <div class="card feature-card">
-    <div class="feature-icon">💾</div>
     <h3>Report History</h3>
     <p>Save analyses and compare any two saved periods later. Your data is stored locally.</p>
   </div>
   <div class="card feature-card">
-    <div class="feature-icon">🛡️</div>
     <h3>Private by default</h3>
     <p>Uploads are processed and discarded unless you save them. API keys live in a local config file.</p>
   </div>
@@ -170,7 +162,6 @@
     </div>
   {% else %}
     <div class="card empty">
-      <div class="big">📊</div>
       <p>No analysis yet. Run your first one to see health scores and reports here.</p>
       <a class="btn btn-primary" href="{{ url_for('compare_page') }}">Get Started →</a>
     </div>
@@ -195,7 +186,6 @@
     {% endfor %}
   {% else %}
     <div class="card empty">
-      <div class="big">🗂️</div>
       <p>Your saved reports will appear here.</p>
     </div>
   {% endif %}
