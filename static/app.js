@@ -237,7 +237,7 @@ function renderAnalysis(a) {
       '</div>' +
       '<div>' +
         '<div class="finding" style="border:none">' +
-          '<div class="f-title">✨ Executive Summary</div>' +
+          '<div class="f-title">Executive Summary</div>' +
           '<p style="margin:6px 0 0">' + escapeHtml(a.summary) + '</p>' +
         '</div>' +
         '<h3 style="margin:16px 0 8px">Most Changed</h3>' +
@@ -295,7 +295,7 @@ function renderInsights(a) {
       '</div>' +
       '<div>' +
         '<div class="finding" style="border:none">' +
-          '<div class="f-title">✨ AI Summary</div>' +
+          '<div class="f-title">AI Summary</div>' +
           '<p style="margin:6px 0 0">' + escapeHtml(a.summary) + '</p>' +
         '</div>' +
         (a.priority_metric ? '<h3 style="margin:16px 0 8px">🎯 Priority area</h3>' +
