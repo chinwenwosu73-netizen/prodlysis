@@ -138,26 +138,26 @@ function renderComprehensive(a) {
         '<p style="margin:6px 0 0;font-size:14px">' + escapeHtml(m.interpretation || '') + '</p>' +
         '</div>';
     }).join('');
-    html += '<h3 style="margin:22px 0 10px">🔍 Per-Metric Deep Dive</h3>' +
+    html += '<h3 style="margin:22px 0 10px">Per-Metric Deep Dive</h3>' +
       '<div class="card" style="background:var(--bg);padding:16px 20px">' + rows + '</div>';
   }
   if (a.cross_metric) {
-    html += '<h3 style="margin:22px 0 10px">🔗 Cross-Metric Analysis</h3>' +
+    html += '<h3 style="margin:22px 0 10px">Cross-Metric Analysis</h3>' +
       '<div class="card" style="background:var(--bg);padding:16px 20px"><p style="margin:0">' +
       escapeHtml(a.cross_metric) + '</p></div>';
   }
   if (a.business_impact) {
-    html += '<h3 style="margin:22px 0 10px">📈 Business Impact</h3>' +
+    html += '<h3 style="margin:22px 0 10px">Business Impact</h3>' +
       '<div class="card" style="background:var(--bg);padding:16px 20px"><p style="margin:0">' +
       escapeHtml(a.business_impact) + '</p></div>';
   }
   if (a.ab_tests && a.ab_tests.length) {
     var tests = a.ab_tests.map(function (t) {
-      return '<div class="finding"><div class="f-title">🧪 ' + escapeHtml(t.name || '') + '</div>' +
+      return '<div class="finding"><div class="f-title">' + escapeHtml(t.name || '') + '</div>' +
         '<div class="muted" style="font-size:13px">Hypothesis: ' + escapeHtml(t.hypothesis || '') + '</div>' +
         '<div class="muted" style="font-size:13px">Success metric: <b>' + escapeHtml(t.success_metric || '') + '</b></div></div>';
     }).join('');
-    html += '<h3 style="margin:22px 0 10px">🧪 A/B Test Suggestions</h3>' +
+    html += '<h3 style="margin:22px 0 10px">A/B Test Suggestions</h3>' +
       '<div class="card" style="background:var(--bg);padding:16px 20px">' + tests + '</div>';
   }
   if (a.risk_watchlist && a.risk_watchlist.length) {
@@ -166,7 +166,7 @@ function renderComprehensive(a) {
         '<b>' + escapeHtml(r.risk || '') + '</b>' +
         '<div class="muted" style="font-size:13px;margin-top:2px">Watch: ' + escapeHtml(r.watch || '') + '</div></div></li>';
     }).join('');
-    html += '<h3 style="margin:22px 0 10px">⚠️ Risk &amp; Watch-List</h3>' +
+    html += '<h3 style="margin:22px 0 10px">Risk &amp; Watch-List</h3>' +
       '<div class="card" style="background:var(--bg);padding:16px 20px"><ul class="rec-list">' + risks + '</ul></div>';
   }
   return html;
@@ -195,7 +195,7 @@ function renderDropoffs(a) {
       '<div style="margin-top:2px">' + escapeHtml(r.text) + '</div></div></li>';
   }).join('');
 
-  return '<h3 style="margin:22px 0 10px">🧭 User Drop-off Analysis</h3>' +
+  return '<h3 style="margin:22px 0 10px">User Drop-off Analysis</h3>' +
     '<div class="card" style="background:var(--bg);padding:16px 20px">' +
       '<p style="margin:0 0 10px"><b>Worst drop-off point:</b> ' + escapeHtml(d.worst || '—') + '</p>' +
       '<p style="margin:0 0 12px">' + escapeHtml(d.summary) + '</p>' +
@@ -298,7 +298,7 @@ function renderInsights(a) {
           '<div class="f-title">AI Summary</div>' +
           '<p style="margin:6px 0 0">' + escapeHtml(a.summary) + '</p>' +
         '</div>' +
-        (a.priority_metric ? '<h3 style="margin:16px 0 8px">🎯 Priority area</h3>' +
+        (a.priority_metric ? '<h3 style="margin:16px 0 8px">Priority area</h3>' +
           '<p class="muted" style="margin:0">Focus on <b>' + escapeHtml(a.priority_metric) + '</b> first.</p>' : '') +
       '</div>' +
     '</div>' +

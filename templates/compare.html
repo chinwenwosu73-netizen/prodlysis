@@ -10,7 +10,7 @@
 <!-- Mode toggle -->
 <div class="mode-switch" role="tablist">
   <button class="mode-btn active" data-mode="single" role="tab" id="mode-single">Single Report Insights</button>
-  <button class="mode-btn" data-mode="compare" role="tab" id="mode-compare">📊 Compare Two Reports</button>
+  <button class="mode-btn" data-mode="compare" role="tab" id="mode-compare">Compare Two Reports</button>
 </div>
 
 <div class="grid grid-2">
@@ -27,8 +27,8 @@
 
       <!-- Input method toggle: upload the document OR enter metrics -->
       <div class="input-method" role="tablist">
-        <button type="button" class="im-btn active" data-method="upload" data-for="single">📁 Upload Document</button>
-        <button type="button" class="im-btn" data-method="manual" data-for="single">⌨️ Enter Metrics</button>
+        <button type="button" class="im-btn active" data-method="upload" data-for="single">Upload Document</button>
+        <button type="button" class="im-btn" data-method="manual" data-for="single">Enter Metrics</button>
       </div>
 
       <div class="im-panel" data-method-panel="single-upload">
@@ -36,7 +36,7 @@
           <label>Upload report</label>
           <label class="dropzone" id="dz-single" for="file-single">
             <input type="file" id="file-single" accept=".csv,.json,.pdf,.txt,text/csv,application/json,application/pdf" />
-            <div class="dz-title">📄 Choose file</div>
+            <div class="dz-title">Choose file</div>
             <div class="dz-hint">Drop a CSV/JSON/PDF export from any analytics platform, or click to browse</div>
             <div class="dz-file hidden"></div>
           </label>
@@ -68,8 +68,8 @@
 
       <!-- Input method toggle: upload both documents OR enter both metrics -->
       <div class="input-method" role="tablist">
-        <button type="button" class="im-btn active" data-method="upload" data-for="compare">📁 Upload Reports</button>
-        <button type="button" class="im-btn" data-method="manual" data-for="compare">⌨️ Enter Metrics</button>
+        <button type="button" class="im-btn active" data-method="upload" data-for="compare">Upload Reports</button>
+        <button type="button" class="im-btn" data-method="manual" data-for="compare">Enter Metrics</button>
       </div>
 
       <div class="im-panel" data-method-panel="compare-upload">
@@ -77,7 +77,7 @@
           <label>Upload previous report</label>
           <label class="dropzone" id="dz-prev" for="file-prev">
             <input type="file" id="file-prev" accept=".csv,.json,.pdf,.txt,text/csv,application/json,application/pdf" />
-            <div class="dz-title">📄 Choose previous file</div>
+            <div class="dz-title">Choose previous file</div>
             <div class="dz-hint">Drop a CSV/JSON/PDF export from any analytics platform, or click to browse</div>
             <div class="dz-file hidden"></div>
           </label>
@@ -87,7 +87,7 @@
           <label>Upload current report</label>
           <label class="dropzone" id="dz-curr" for="file-curr">
             <input type="file" id="file-curr" accept=".csv,.json,.pdf,.txt,text/csv,application/json,application/pdf" />
-            <div class="dz-title">📄 Choose current file</div>
+            <div class="dz-title">Choose current file</div>
             <div class="dz-hint">Drop a CSV/JSON/PDF export from any analytics platform, or click to browse</div>
             <div class="dz-file hidden"></div>
           </label>
@@ -121,10 +121,10 @@
     <div class="row" style="justify-content:space-between">
       <h3 style="margin:0">Export Report</h3>
       <div class="row">
-        <button class="btn btn-ghost btn-sm" id="save-btn">💾 Save to History</button>
-        <button class="btn btn-ghost btn-sm" id="copy-btn">📋 Copy</button>
-        <button class="btn btn-ghost btn-sm" id="md-btn">⬇ Markdown</button>
-        <button class="btn btn-primary btn-sm" id="pdf-btn">⬇ PDF</button>
+        <button class="btn btn-ghost btn-sm" id="save-btn">Save to History</button>
+        <button class="btn btn-ghost btn-sm" id="copy-btn">Copy</button>
+        <button class="btn btn-ghost btn-sm" id="md-btn">Markdown</button>
+        <button class="btn btn-primary btn-sm" id="pdf-btn">PDF</button>
       </div>
     </div>
   </div>
