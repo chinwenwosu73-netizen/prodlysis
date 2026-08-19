@@ -140,6 +140,12 @@ textarea.input { resize: vertical; min-height: 120px; line-height: 1.5; }
 .dropzone .dz-title { font-weight: 600; margin-bottom: 4px; }
 .dropzone .dz-hint { font-size: 13px; color: var(--muted); }
 .dropzone .dz-file { margin-top: 8px; font-size: 13px; color: var(--pink); font-weight: 600; }
+.dz-remove {
+  margin-left: 8px; padding: 2px 8px; border: none; border-radius: 999px;
+  background: rgba(239,68,68,.12); color: var(--danger); font-weight: 700;
+  font-size: 13px; line-height: 1.4; cursor: pointer; vertical-align: middle;
+}
+.dz-remove:hover { background: rgba(239,68,68,.22); }
 .dropzone input[type="file"] {
   position: absolute; width: 1px; height: 1px; opacity: 0;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
@@ -275,6 +281,21 @@ table.metrics tr:last-child td { border-bottom: none; }
 }
 .mode-btn:hover { color: var(--pink); }
 .mode-btn.active { background: var(--pink); color: #fff; }
+
+/* ---------- Input method toggle (upload vs enter metrics) ---------- */
+.input-method {
+  display: flex; gap: 8px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 5px; margin-bottom: 18px;
+}
+.im-btn {
+  flex: 1; border: none; background: transparent; color: var(--muted);
+  font-weight: 600; font-size: 13px; padding: 8px 12px; border-radius: 9px;
+  cursor: pointer; font-family: "Inter", sans-serif;
+}
+.im-btn:hover { color: var(--pink); }
+.im-btn.active { background: var(--pink); color: #fff; }
+.im-panel { margin-bottom: 4px; }
+
 
 /* ---------- Hero ---------- */
 .hero {

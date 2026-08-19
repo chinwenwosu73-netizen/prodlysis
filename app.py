@@ -38,13 +38,41 @@ def _read_payload(payload):
 
     Also handles a 'path' upload style where the browser sends file contents
     as text (base64 not needed since we read client-side).
+
+    PDF payloads (base64 bytes sent from the client, or a data URI) are
+    detected and their text is extracted here, so downstream CSV/manual
+    parsing works on the PDF's contents.
     """
     if not payload:
         return None
     if isinstance(payload, str):
+        # A raw string that is a base64/data-URI PDF
+        if payload.lstrip().startswith("data:application/pdf") or _is_base64_pdf(payload):
+            return parsers.pdf_to_text(payload)
         return payload
     text = payload.get("text")
+    if payload.get("is_pdf") or payload.get("kind") == "pdf":
+        return parsers.pdf_to_text(payload)
+    if text and text.lstrip().startswith("data:application/pdf"):
+        return parsers.pdf_to_text(text)
     return text if text else None
+
+
+def _is_base64_pdf(s):
+    """Cheap heuristic: a base64 blob that decodes to a %PDF header."""
+    if not s or not isinstance(s, str):
+        return False
+    s = s.strip()
+    if len(s) < 8:
+        return False
+    if s.startswith("data:application/pdf"):
+        return True
+    try:
+        import base64
+        head = base64.b64decode(s[:64], validate=False)
+        return head[:4] == b"%PDF"
+    except Exception:
+        return False
 
 
 def _parse_source(payload, fmt_hint):
@@ -81,21 +109,43 @@ def _split_combined(payload, fmt_hint=""):
     """Split a single 'Metric,Previous,Current' payload into (prev, curr).
 
     Returns (prev_dict, curr_dict) or None if it isn't a combined file.
+    Supports CSV, JSON, and PDF payloads (base64 or data URI).
     """
     text = _read_payload(payload)
     if not text or not text.strip():
         return None
 
-    # CSV combined file
-    pairs = parsers.parse_csv_full(text)
-    if pairs:
-        rows = {}
-        for key, pv, cv in pairs:
-            rows[key] = (pv, cv)
-        prev = parsers.to_metric_dict([(k, v[0]) for k, v in rows.items()])
-        curr = parsers.to_metric_dict([(k, v[1]) for k, v in rows.items()])
-        if prev and curr:
-            return prev, curr
+    # PDF combined file: pypdf table reconstruction (Metric / prev / curr).
+    if isinstance(payload, dict) and (payload.get("is_pdf") or payload.get("kind") == "pdf"):
+        split = parsers.parse_pdf_combined(payload)
+        if split:
+            return split
+
+    # CSV combined file (all metrics present in the document are used)
+    parsed = parsers.parse_csv_rows(text)
+    if parsed:
+        rows = parsed["rows"]
+        mode = parsed["mode"]
+        if mode == "long":
+            # long format: each row is (key, [col1, col2, ...]) where col1 is
+            # the FIRST period value and col2 (if present) is the SECOND.
+            two_period = all(len(vals) >= 2 for _k, vals in rows)
+            if two_period:
+                prev = parsers.to_metric_dict([(k, v[0]) for k, v in rows])
+                curr = parsers.to_metric_dict([(k, v[1]) for k, v in rows])
+                if prev and curr:
+                    return prev, curr
+            # single-period long format -> treat as "current" only
+            return None
+        # transposed: each (key, vals) has one value per period row
+        vals_per_metric = [v for _k, v in rows]
+        n_periods = max((len(v) for v in vals_per_metric), default=0)
+        if n_periods >= 2:
+            prev = parsers.to_metric_dict([(k, v[0]) for k, v in rows if len(v) >= 2])
+            curr = parsers.to_metric_dict([(k, v[1]) for k, v in rows if len(v) >= 2])
+            if prev and curr:
+                return prev, curr
+        return None
 
     # JSON with previous/current keys
     try:
@@ -116,11 +166,29 @@ def _label(data, key, default):
     return str(lbl).strip() if lbl else default
 
 
-def _build_full_analysis(previous, current, previous_label, current_label):
-    """Run the compare + AI pipeline and return a serializable analysis."""
+def _build_full_analysis(previous, current, previous_label, current_label,
+                         combined_payload=None):
+    """Run the compare + AI pipeline and return a serializable analysis.
+
+    `combined_payload` (optional) is the raw source text of a single uploaded
+    file that contains BOTH periods; it is used for the drop-off analysis and
+    (as a fallback) for deriving the periods themselves.
+    """
+    # If one period is missing but a combined source was provided, derive it.
+    if combined_payload is not None and (not previous or not current):
+        split = _split_combined(combined_payload, "")
+        if split:
+            if not previous:
+                previous = split[0]
+            if not current:
+                current = split[1]
+
     comparison = compare.compare(previous, current)
     analysis = ai.analyze(comparison, previous, current)
     analysis = ai.llm_enrich(analysis, comparison)
+
+    # User drop-off analysis, built from the CURRENT period's metrics
+    dropoff = compare.analyze_dropoffs(current)
 
     # Most-changed metric sentence
     most_changed = None
@@ -154,6 +222,8 @@ def _build_full_analysis(previous, current, previous_label, current_label):
         "recommendations": analysis["recommendations"],
         "next_steps": analysis["next_steps"],
         "questions": analysis["questions"],
+        # User drop-off analysis (from the current period)
+        "dropoff_analysis": dropoff,
         # DeepSeek comprehensive sections (present only when LLM provided them)
         "per_metric": analysis.get("per_metric"),
         "cross_metric": analysis.get("cross_metric"),
@@ -166,8 +236,15 @@ def _build_full_analysis(previous, current, previous_label, current_label):
 
 
 def _analysis_from_report(r):
-    """Return the analysis dict stored inside a saved report."""
-    return r.get("analysis") or r
+    """Return the analysis dict stored inside a saved report.
+
+    Normalizes older/legacy reports (including single-period reports saved
+    before normalization existed) so history, the report view, and exports
+    always render correctly.
+    """
+    analysis = r.get("analysis") or r
+    rtype = r.get("type") or ("single" if "health_label" in analysis else "compare")
+    return _normalize_analysis(analysis, rtype)
 
 
 # ---------------------------------------------------------------------------
@@ -334,7 +411,21 @@ def api_analyze():
     previous = _parse_source(data.get("previous"), data.get("previous_format"))
     current = _parse_source(data.get("current"), data.get("current_format"))
 
-    # If only one period provided, try to auto-split a combined
+    # Combined source: a single file/paste that holds both periods
+    # ("Metric,Previous,Current" CSV, two-row pivot, {previous, current} JSON,
+    # or a PDF table).
+    combined_payload = None
+    if data.get("combined"):
+        combined_src = data["combined"]
+        combined_payload = _read_payload(combined_src)
+        if combined_payload:
+            # Keep the original payload shape so PDF flags are preserved.
+            split = _split_combined(combined_src, "auto")
+            if split:
+                previous = previous or split[0]
+                current = current or split[1]
+
+    # Back-compat: if only one period provided, try to auto-split a combined
     # "Metric,Previous,Current" CSV / JSON into both periods.
     if (not previous or not current) and (data.get("previous") or data.get("current")):
         combined = data.get("previous") or data.get("current")
@@ -350,14 +441,15 @@ def api_analyze():
         return jsonify({"error": "Provide at least one period of metrics."}), 400
     if not previous or not current:
         return jsonify({
-            "error": "Both previous and current periods are required. Upload two "
-                     "files (one per period), or upload a single file with "
-                     "Metric,Previous,Current columns."
+            "error": "Both previous and current periods are required. Upload a "
+                     "combined file with Metric,Previous,Current columns, or "
+                     "upload two files (one per period)."
         }), 400
 
     prev_label = _label(data, "previous_label", "Previous")
     curr_label = _label(data, "current_label", "Current")
-    analysis = _build_full_analysis(previous, current, prev_label, curr_label)
+    analysis = _build_full_analysis(previous, current, prev_label, curr_label,
+                                    combined_payload)
     return jsonify(analysis)
 
 
@@ -379,18 +471,62 @@ def api_save():
     analysis = data.get("analysis")
     if not analysis:
         return jsonify({"error": "No analysis to save."}), 400
+    rtype = data.get("type") or analysis.get("type") or (
+        "single" if "health_label" in analysis else "compare"
+    )
     title = (data.get("title") or "").strip() or (
         f"{analysis.get('previous_label', 'Previous')} vs "
         f"{analysis.get('current_label', 'Current')}"
     )
+    # Normalize so history/report templates work for both report types.
+    normalized = _normalize_analysis(analysis, rtype)
     report = store.save_report({
         "title": title,
-        "analysis": analysis,
+        "type": rtype,
+        "analysis": normalized,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
     })
     resp = jsonify(report)
     resp.set_cookie("latest_report_id", report["id"], max_age=60 * 60 * 24 * 30)
     return resp
+
+
+def _normalize_analysis(analysis, rtype):
+    """Fill in compare-style fields so a single analysis renders in history,
+    the report view, and exports as if it were a one-period comparison."""
+    a = dict(analysis)
+    if rtype == "single":
+        label = a.get("label") or "Current"
+        a.setdefault("previous_label", "Baseline")
+        a.setdefault("current_label", label)
+        a.setdefault("health_delta", a.get("health", 50) - 50)
+        a.setdefault("num_compared", len(a.get("metrics_status", [])))
+        a.setdefault("num_improved", sum(1 for m in a.get("metrics_status", []) if m.get("status") in ("good", "ok")))
+        a.setdefault("num_regressed", sum(1 for m in a.get("metrics_status", []) if m.get("status") == "poor"))
+        a.setdefault("num_unchanged", 0)
+        # Build a single-period metrics list so tables/export render.
+        if not a.get("metrics"):
+            status_rows = a.get("metrics_status", [])
+            a["metrics"] = []
+            for s in status_rows:
+                a["metrics"].append({
+                    "key": s.get("key"),
+                    "label": s.get("label"),
+                    "group": s.get("group", ""),
+                    "kind": "count",
+                    "unit": "",
+                    "higher_better": s.get("higher_better", True),
+                    "previous": None,
+                    "current": s.get("value"),
+                    "previous_display": "—",
+                    "current_display": s.get("display"),
+                    "change": None,
+                    "change_display": "—",
+                    "status": s.get("status"),
+                })
+        a.setdefault("questions", [])
+        a.setdefault("next_steps", a.get("recommendations", [])[:3])
+    return a
 
 
 @app.route("/api/reports", methods=["GET"])

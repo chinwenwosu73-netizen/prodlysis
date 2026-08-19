@@ -39,15 +39,28 @@ function initDropzone(id, inputId, fileNameSelector) {
       onFileSelected(input, fileName);
     }
   });
-  input.addEventListener('change', function () { onFileSelected(input, fileName); });
+  input.addEventListener('change', function () {
+    onFileSelected(input, fileName);
+    clearResults();
+  });
 }
 
 function onFileSelected(input, fileNameEl) {
   var f = input.files && input.files[0];
   if (!f) return;
   if (fileNameEl) {
-    fileNameEl.textContent = '✓ ' + f.name;
+    fileNameEl.innerHTML = '✓ ' + escapeHtml(f.name) +
+      ' <button type="button" class="dz-remove" title="Remove attachment" aria-label="Remove attachment">✕</button>';
     fileNameEl.classList.remove('hidden');
+    var rm = fileNameEl.querySelector('.dz-remove');
+    if (rm) rm.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      input.value = '';
+      fileNameEl.innerHTML = '';
+      fileNameEl.classList.add('hidden');
+      clearResults();
+    });
   }
 }
 
@@ -55,6 +68,15 @@ function readFileText(input) {
   return new Promise(function (resolve, reject) {
     var f = input.files && input.files[0];
     if (!f) { resolve(null); return; }
+    var isPdf = /\.pdf$/i.test(f.name) || (f.type && f.type === 'application/pdf');
+    if (isPdf) {
+      // Read PDFs as base64 so the server can decode + extract their text.
+      var fr = new FileReader();
+      fr.onload = function () { resolve({ text: fr.result, is_pdf: true }); };
+      fr.onerror = function () { reject(fr.error); };
+      fr.readAsDataURL(f);
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function () { resolve(reader.result); };
     reader.onerror = function () { reject(reader.error); };
@@ -62,7 +84,21 @@ function readFileText(input) {
   });
 }
 
-/* ---------- Shared render helpers ---------- */
+/* ---------- Results reset ---------- */
+// Hides the results panel so no metrics comparison or insights are shown
+// until a document has been uploaded AND an analysis has been run.
+// Called whenever the inputs (files or pasted text) change or are cleared.
+function clearResults() {
+  var results = document.getElementById('results');
+  var resultsCard = document.getElementById('results-card');
+  if (results) results.innerHTML = '';
+  if (resultsCard) resultsCard.hidden = true;
+  var actions = document.getElementById('report-actions');
+  if (actions) actions.classList.add('hidden');
+  window.__analysis = null;
+}
+
+/* ---------- File dropzone handling ---------- */
 function renderFindings(findings) {
   return (findings || []).map(function (f) {
     var icon = f.severity === 'positive' ? '✓' : (f.severity === 'neutral' ? '·' : '!');
@@ -136,6 +172,42 @@ function renderComprehensive(a) {
   return html;
 }
 
+/* ---------- User drop-off analysis rendering ---------- */
+function renderDropoffs(a) {
+  var d = a.dropoff_analysis;
+  if (!d || !d.dropoff_points || !d.dropoff_points.length) return '';
+
+  var rows = d.dropoff_points.map(function (p) {
+    return '<tr>' +
+      '<td>' + escapeHtml(p.label) + '</td>' +
+      '<td class="stat">' + escapeHtml(p.display) + '</td>' +
+      '<td><span class="badge ' + escapeHtml(p.status) + '">' + escapeHtml(p.status) + '</span></td>' +
+      '<td class="muted" style="font-size:13px">' + escapeHtml(p.point) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  var causes = (d.causes || []).map(function (c) {
+    return '<li><span class="rec-check" style="background:rgba(239,68,68,.12);color:var(--danger)">!</span><div>' + escapeHtml(c) + '</div></li>';
+  }).join('');
+
+  var recs = (d.recommendations || []).map(function (r) {
+    return '<li><span class="rec-check">✓</span><div><span class="badge ' + escapeHtml(r.priority) + '">' + escapeHtml(r.priority) + '</span>' +
+      '<div style="margin-top:2px">' + escapeHtml(r.text) + '</div></div></li>';
+  }).join('');
+
+  return '<h3 style="margin:22px 0 10px">🧭 User Drop-off Analysis</h3>' +
+    '<div class="card" style="background:var(--bg);padding:16px 20px">' +
+      '<p style="margin:0 0 10px"><b>Worst drop-off point:</b> ' + escapeHtml(d.worst || '—') + '</p>' +
+      '<p style="margin:0 0 12px">' + escapeHtml(d.summary) + '</p>' +
+      '<div class="table-wrap"><table class="metrics">' +
+        '<thead><tr><th>Drop-off Point</th><th>Value</th><th>Status</th><th>Where it happens</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div>' +
+      (causes ? '<h4 style="margin:16px 0 8px">Likely causes</h4><ul class="rec-list">' + causes + '</ul>' : '') +
+      (recs ? '<h4 style="margin:16px 0 8px">Fix these to reduce drop-off</h4><ul class="rec-list">' + recs + '</ul>' : '') +
+    '</div>';
+}
+
 /* ---------- Compare results rendering ---------- */
 function renderAnalysis(a) {
   var el = document.getElementById('results');
@@ -185,11 +257,15 @@ function renderAnalysis(a) {
     '<h3 style="margin:22px 0 10px">Recommendations</h3>' +
     '<div class="card" style="background:var(--bg);padding:16px 20px"><ul class="rec-list">' + renderRecs(a.recommendations) + '</ul></div>' +
 
+    renderDropoffs(a) +
+
     renderComprehensive(a);
 
   window.__analysis = a;
   window.__analysisType = 'compare';
 
+  var resultsCard = document.getElementById('results-card');
+  if (resultsCard) resultsCard.hidden = false;
   var actions = document.getElementById('report-actions');
   if (actions) actions.classList.remove('hidden');
 }
@@ -249,6 +325,8 @@ function renderInsights(a) {
   window.__analysis = a;
   window.__analysisType = 'single';
 
+  var resultsCard = document.getElementById('results-card');
+  if (resultsCard) resultsCard.hidden = false;
   var actions = document.getElementById('report-actions');
   if (actions) actions.classList.remove('hidden');
 
@@ -268,6 +346,12 @@ function buildPayload() {
   };
 }
 
+/* Which input method is active for a mode: 'upload' or 'manual' */
+function activeMethod(mode) {
+  var btn = document.querySelector('.im-btn.active[data-for="' + mode + '"]');
+  return btn ? btn.getAttribute('data-method') : 'upload';
+}
+
 function runAnalysis() {
   var btn = document.getElementById('analyze-btn');
   if (!btn) return;
@@ -278,11 +362,24 @@ function runAnalysis() {
   var payload = buildPayload();
   var filePrev = document.getElementById('file-prev');
   var fileCurr = document.getElementById('file-curr');
+  var method = activeMethod('compare');
 
+  if (method === 'manual') {
+    // Only the manually-entered metrics are used.
+    payload.previous = { text: document.getElementById('manual-prev').value };
+    payload.current = { text: document.getElementById('manual-curr').value };
+    return submitAnalysis(payload, btn, orig, 'compare');
+  }
+
+  // Upload mode: previous and current are uploaded as two separate reports.
   Promise.all([readFileText(filePrev), readFileText(fileCurr)])
     .then(function (texts) {
-      if (texts[0] != null) payload.previous = { text: texts[0] };
-      if (texts[1] != null) payload.current = { text: texts[1] };
+      if (texts[0] != null) {
+        payload.previous = (texts[0].is_pdf) ? texts[0] : { text: texts[0] };
+      }
+      if (texts[1] != null) {
+        payload.current = (texts[1].is_pdf) ? texts[1] : { text: texts[1] };
+      }
       return fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -293,6 +390,30 @@ function runAnalysis() {
     .then(function (r) {
       if (!r.ok) throw new Error(r.data.error || 'Analysis failed');
       renderAnalysis(r.data);
+      autoSaveToHistory(r.data, 'compare');
+      showToast('Analysis complete');
+    })
+    .catch(function (err) {
+      showToast(err.message || 'Failed to analyze', true);
+    })
+    .finally(function () {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    });
+}
+
+/* Shared POST + render for the compare analysis (used by manual mode) */
+function submitAnalysis(payload, btn, orig, mode) {
+  return fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+    .then(function (r) {
+      if (!r.ok) throw new Error(r.data.error || 'Analysis failed');
+      renderAnalysis(r.data);
+      autoSaveToHistory(r.data, 'compare');
       showToast('Analysis complete');
     })
     .catch(function (err) {
@@ -312,15 +433,24 @@ function runInsights() {
   var orig = btn.innerHTML;
   btn.innerHTML = '<span class="loading"></span> Analyzing...';
 
-  var payload = {
-    format: 'auto',
-    source: { text: document.getElementById('manual-single').value },
-  };
+  var method = activeMethod('single');
   var fileSingle = document.getElementById('file-single');
+
+  if (method === 'manual') {
+    // Only the manually-entered metrics are used.
+    var payload = {
+      format: 'auto',
+      source: { text: document.getElementById('manual-single').value },
+    };
+    return submitInsights(payload, btn, orig);
+  }
 
   readFileText(fileSingle)
     .then(function (text) {
-      if (text != null) payload.source = { text: text };
+      var payload = { format: 'auto', source: null };
+      if (text != null) {
+        payload.source = (text.is_pdf) ? text : { text: text };
+      }
       return fetch('/api/insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -331,6 +461,7 @@ function runInsights() {
     .then(function (r) {
       if (!r.ok) throw new Error(r.data.error || 'Analysis failed');
       renderInsights(r.data);
+      autoSaveToHistory(r.data, 'single');
       showToast('Insights ready');
     })
     .catch(function (err) {
@@ -340,6 +471,42 @@ function runInsights() {
       btn.disabled = false;
       btn.innerHTML = orig;
     });
+}
+
+/* Shared POST + render for the single-report flow (manual mode) */
+function submitInsights(payload, btn, orig) {
+  return fetch('/api/insights', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+    .then(function (r) {
+      if (!r.ok) throw new Error(r.data.error || 'Analysis failed');
+      renderInsights(r.data);
+      autoSaveToHistory(r.data, 'single');
+      showToast('Insights ready');
+    })
+    .catch(function (err) {
+      showToast(err.message || 'Failed to analyze', true);
+    })
+    .finally(function () {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    });
+}
+
+/* Auto-save every analyzed report to history so it shows under /history. */
+function autoSaveToHistory(a, type) {
+  if (!a) return;
+  var title = type === 'single'
+    ? (a.label || 'Single Report Insights')
+    : a.previous_label + ' vs ' + a.current_label;
+  fetch('/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ analysis: a, title: title, type: type }),
+  }).catch(function () { /* non-blocking; user can Save manually */ });
 }
 
 /* ---------- Mode switching ---------- */
@@ -358,13 +525,7 @@ function switchMode(mode) {
 
   var actions = document.getElementById('report-actions');
   if (actions) actions.classList.add('hidden');
-  if (results) {
-    results.innerHTML = '<div class="empty"><div class="big">' + (isSingle ? '✨' : '📊') + '</div>' +
-      '<p>' + (isSingle
-        ? 'Your single-report insights will appear here — health score, findings, and UI revamp suggestions.'
-        : 'Your comparison will appear here — health score, metric changes, findings, and recommendations.') +
-      '</p></div>';
-  }
+  clearResults();
   window.__analysis = null;
 }
 
@@ -378,7 +539,7 @@ function saveToHistory() {
   fetch('/api/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ analysis: a, title: title }),
+    body: JSON.stringify({ analysis: a, title: title, type: window.__analysisType }),
   })
     .then(function (res) { return res.json(); })
     .then(function (d) {
@@ -414,6 +575,17 @@ function copyReport() {
     });
     lines.push('', '## Recommendations');
     (a.recommendations || []).forEach(function (r, i) { lines.push((i + 1) + '. [' + r.priority + '] ' + r.text); });
+    if (a.dropoff_analysis && a.dropoff_analysis.dropoff_points) {
+      lines.push('', '## User Drop-off Analysis');
+      lines.push('Worst drop-off point: ' + a.dropoff_analysis.worst);
+      lines.push(a.dropoff_analysis.summary || '');
+      (a.dropoff_analysis.dropoff_points || []).forEach(function (p) {
+        lines.push('- ' + p.label + ': ' + p.display + ' (' + p.status + ') - ' + p.point);
+      });
+      (a.dropoff_analysis.recommendations || []).forEach(function (r, i) {
+        lines.push((i + 1) + '. [' + r.priority + '] ' + r.text);
+      });
+    }
   }
   navigator.clipboard.writeText(lines.join('\n'))
     .then(function () { showToast('Copied to clipboard'); })
@@ -429,7 +601,7 @@ function saveForExport() {
   return fetch('/api/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ analysis: a, title: title }),
+    body: JSON.stringify({ analysis: a, title: title, type: window.__analysisType }),
   }).then(function (res) { return res.json(); });
 }
 
@@ -450,6 +622,28 @@ document.addEventListener('DOMContentLoaded', function () {
   initDropzone('dz-prev', 'file-prev', '#dz-prev .dz-file');
   initDropzone('dz-curr', 'file-curr', '#dz-curr .dz-file');
   initDropzone('dz-single', 'file-single', '#dz-single .dz-file');
+
+  // Input method toggle: either upload the document(s) OR enter metrics.
+  document.querySelectorAll('.im-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var mode = btn.getAttribute('data-for');
+      var method = btn.getAttribute('data-method');
+      document.querySelectorAll('.im-btn[data-for="' + mode + '"]').forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      document.querySelectorAll('[data-method-panel="' + mode + '-upload"], [data-method-panel="' + mode + '-manual"]').forEach(function (p) {
+        p.classList.toggle('hidden', p.getAttribute('data-method-panel') !== mode + '-' + method);
+      });
+      clearResults();
+    });
+  });
+
+  // Changing any input source clears previously rendered results, so no
+  // metrics comparison shows until a fresh analysis is run.
+  ['manual-prev', 'manual-curr', 'manual-single'].forEach(function (id) {
+    var ta = document.getElementById(id);
+    if (ta) ta.addEventListener('input', clearResults);
+  });
 
   var modeSingle = document.getElementById('mode-single');
   var modeCompare = document.getElementById('mode-compare');

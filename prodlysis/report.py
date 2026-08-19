@@ -67,6 +67,22 @@ def build_markdown(analysis, previous_label="Previous", current_label="Current")
     for i, r in enumerate(analysis.get("recommendations", []), 1):
         md.append(f"{i}. **[{r.get('priority', 'Medium')}]** {r['text']}")
 
+    # User drop-off analysis
+    drop = analysis.get("dropoff_analysis")
+    if drop and drop.get("dropoff_points"):
+        md.append("\n## User Drop-off Analysis\n")
+        md.append(f"**Worst drop-off point:** {drop.get('worst', '—')}\n")
+        md.append(drop.get("summary", "") + "\n")
+        md.append("| Drop-off Point | Value | Status | Where it happens |")
+        md.append("| --- | --- | --- | --- |")
+        for p in drop["dropoff_points"]:
+            md.append(f"| {p['label']} | {p['display']} | {p['status'].title()} | {p.get('point', '')} |")
+        for c in drop.get("causes", []):
+            md.append(f"\n- {c}")
+        md.append("\n**Fix these to reduce drop-off:**")
+        for i, r in enumerate(drop.get("recommendations", []), 1):
+            md.append(f"{i}. **[{r.get('priority', 'Medium')}]** {r['text']}")
+
     # Next steps
     md.append("\n## Next Steps\n")
     for i, r in enumerate(analysis.get("next_steps", analysis.get("recommendations", [])), 1):
@@ -172,6 +188,42 @@ def build_pdf_bytes(analysis, previous_label="Previous", current_label="Current"
     for i, r in enumerate(analysis.get("recommendations", []), 1):
         priority = r.get("priority", "Medium")
         story.append(Paragraph(f"{i}. <b>[{priority}]</b> {r['text']}", bullet))
+
+    # User drop-off analysis
+    drop = analysis.get("dropoff_analysis")
+    if drop and drop.get("dropoff_points"):
+        story.append(Paragraph("User Drop-off Analysis", h2))
+        story.append(Paragraph(
+            f"Worst drop-off point: <b>{drop.get('worst', '—')}</b>", body))
+        story.append(Paragraph(drop.get("summary") or "", body))
+        dheader = ["Drop-off Point", "Value", "Status", "Where it happens"]
+        drows = [dheader]
+        for p in drop["dropoff_points"]:
+            drows.append([
+                p["label"], p["display"], p["status"].title(), p.get("point", ""),
+            ])
+        if len(drows) > 1:
+            dt = Table(drows, colWidths=[30 * mm, 22 * mm, 20 * mm, 60 * mm])
+            dt.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), AMBER),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+                ("BACKGROUND", (0, 1), (-1, -1), CARD),
+                ("GRID", (0, 0), (-1, -1), 0.5, BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.append(Spacer(1, 4))
+            story.append(dt)
+        story.append(Paragraph("Likely causes:", body))
+        for c in drop.get("causes", []):
+            story.append(Paragraph(f"• {c}", bullet))
+        story.append(Paragraph("Fix these to reduce drop-off:", body))
+        for i, r in enumerate(drop.get("recommendations", []), 1):
+            priority = r.get("priority", "Medium")
+            story.append(Paragraph(f"{i}. <b>[{priority}]</b> {r['text']}", bullet))
 
     # Next steps
     story.append(Paragraph("Next Steps", h2))

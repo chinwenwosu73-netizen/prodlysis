@@ -25,21 +25,29 @@
         <input class="input" id="single-label" placeholder="Current" value="Current" />
       </div>
 
-      <div class="field">
-        <label>Upload report</label>
-        <label class="dropzone" id="dz-single" for="file-single">
-          <input type="file" id="file-single" accept=".csv,.json,.txt,text/csv,application/json" />
-          <div class="dz-title">📄 Choose file</div>
-          <div class="dz-hint">Drop a CSV/JSON export from any analytics platform, or click to browse</div>
-          <div class="dz-file hidden"></div>
-        </label>
+      <!-- Input method toggle: upload the document OR enter metrics -->
+      <div class="input-method" role="tablist">
+        <button type="button" class="im-btn active" data-method="upload" data-for="single">📁 Upload Document</button>
+        <button type="button" class="im-btn" data-method="manual" data-for="single">⌨️ Enter Metrics</button>
       </div>
 
-      <div class="or-divider">OR</div>
+      <div class="im-panel" data-method-panel="single-upload">
+        <div class="field">
+          <label>Upload report</label>
+          <label class="dropzone" id="dz-single" for="file-single">
+            <input type="file" id="file-single" accept=".csv,.json,.pdf,.txt,text/csv,application/json,application/pdf" />
+            <div class="dz-title">📄 Choose file</div>
+            <div class="dz-hint">Drop a CSV/JSON/PDF export from any analytics platform, or click to browse</div>
+            <div class="dz-file hidden"></div>
+          </label>
+        </div>
+      </div>
 
-      <div class="field">
-        <label>Paste metrics</label>
-        <textarea class="input" id="manual-single" placeholder="Drop-off Rate: 42%&#10;Rage Clicks: 118&#10;Dead Clicks: 91&#10;Scroll Depth: 46%&#10;Session Duration: 1m 10s"></textarea>
+      <div class="im-panel hidden" data-method-panel="single-manual">
+        <div class="field">
+          <label>Enter metrics</label>
+          <textarea class="input" id="manual-single" placeholder="Enter your metrics, one per line, e.g. Drop-off Rate: 42%"></textarea>
+        </div>
       </div>
 
       <button class="btn btn-primary btn-block" id="insights-btn">Get Insights</button>
@@ -58,35 +66,43 @@
         <input class="input" id="curr-label" placeholder="Current" value="Current" />
       </div>
 
-      <div class="field">
-        <label>Upload previous report</label>
-        <label class="dropzone" id="dz-prev" for="file-prev">
-          <input type="file" id="file-prev" accept=".csv,.json,.txt,text/csv,application/json" />
-          <div class="dz-title">📄 Choose previous file</div>
-          <div class="dz-hint">Drop a CSV/JSON export from any analytics platform, or click to browse</div>
-          <div class="dz-file hidden"></div>
-        </label>
+      <!-- Input method toggle: upload both documents OR enter both metrics -->
+      <div class="input-method" role="tablist">
+        <button type="button" class="im-btn active" data-method="upload" data-for="compare">📁 Upload Reports</button>
+        <button type="button" class="im-btn" data-method="manual" data-for="compare">⌨️ Enter Metrics</button>
       </div>
 
-      <div class="field">
-        <label>Upload current report</label>
-        <label class="dropzone" id="dz-curr" for="file-curr">
-          <input type="file" id="file-curr" accept=".csv,.json,.txt,text/csv,application/json" />
-          <div class="dz-title">📄 Choose current file</div>
-          <div class="dz-hint">Drop a CSV/JSON export from any analytics platform, or click to browse</div>
-          <div class="dz-file hidden"></div>
-        </label>
+      <div class="im-panel" data-method-panel="compare-upload">
+        <div class="field">
+          <label>Upload previous report</label>
+          <label class="dropzone" id="dz-prev" for="file-prev">
+            <input type="file" id="file-prev" accept=".csv,.json,.pdf,.txt,text/csv,application/json,application/pdf" />
+            <div class="dz-title">📄 Choose previous file</div>
+            <div class="dz-hint">Drop a CSV/JSON/PDF export from any analytics platform, or click to browse</div>
+            <div class="dz-file hidden"></div>
+          </label>
+        </div>
+
+        <div class="field">
+          <label>Upload current report</label>
+          <label class="dropzone" id="dz-curr" for="file-curr">
+            <input type="file" id="file-curr" accept=".csv,.json,.pdf,.txt,text/csv,application/json,application/pdf" />
+            <div class="dz-title">📄 Choose current file</div>
+            <div class="dz-hint">Drop a CSV/JSON/PDF export from any analytics platform, or click to browse</div>
+            <div class="dz-file hidden"></div>
+          </label>
+        </div>
       </div>
 
-      <div class="or-divider">OR</div>
-
-      <div class="field">
-        <label>Paste previous metrics</label>
-        <textarea class="input" id="manual-prev" placeholder="Drop-off Rate: 42%&#10;Rage Clicks: 118&#10;Dead Clicks: 91&#10;Scroll Depth: 46%&#10;Session Duration: 1m 10s"></textarea>
-      </div>
-      <div class="field">
-        <label>Paste current metrics</label>
-        <textarea class="input" id="manual-curr" placeholder="Drop-off Rate: 27%&#10;Rage Clicks: 64&#10;Dead Clicks: 52&#10;Scroll Depth: 68%&#10;Session Duration: 2m 01s"></textarea>
+      <div class="im-panel hidden" data-method-panel="compare-manual">
+        <div class="field">
+          <label>Enter previous metrics</label>
+          <textarea class="input" id="manual-prev" placeholder="Enter your previous-period metrics, one per line, e.g. Sessions: 2400"></textarea>
+        </div>
+        <div class="field">
+          <label>Enter current metrics</label>
+          <textarea class="input" id="manual-curr" placeholder="Enter your current-period metrics, one per line, e.g. Sessions: 2650"></textarea>
+        </div>
       </div>
 
       <button class="btn btn-primary btn-block" id="analyze-btn">Analyze Reports</button>
@@ -94,14 +110,9 @@
   </div>
 
   <!-- Results panel -->
-  <div class="card">
+  <div class="card" id="results-card" hidden>
     <h3>Results</h3>
-    <div id="results" class="results-placeholder">
-      <div class="empty">
-        <div class="big">✨</div>
-        <p>Your insights will appear here — health score, findings, and recommendations.</p>
-      </div>
-    </div>
+    <div id="results" class="results-placeholder"></div>
   </div>
 </div>
 
@@ -122,46 +133,6 @@
 
 {% block scripts %}
 <script>
-  // Sample data loaders
-  const sampleSingle = [
-    "Sessions: 2400",
-    "Drop-off Rate: 42%",
-    "Rage Clicks: 118",
-    "Dead Clicks: 91",
-    "Scroll Depth: 46%",
-    "Session Duration: 1m 10s",
-    "Bounce Rate: 38%",
-    "Conversion Rate: 3.2%"
-  ].join("\n");
-  const samplePrev = [
-    "Sessions: 2400",
-    "Drop-off Rate: 42%",
-    "Rage Clicks: 118",
-    "Dead Clicks: 91",
-    "Scroll Depth: 46%",
-    "Session Duration: 1m 10s",
-    "Bounce Rate: 38%",
-    "Conversion Rate: 3.2%"
-  ].join("\n");
-  const sampleCurr = [
-    "Sessions: 2650",
-    "Drop-off Rate: 27%",
-    "Rage Clicks: 64",
-    "Dead Clicks: 52",
-    "Scroll Depth: 68%",
-    "Session Duration: 2m 01s",
-    "Bounce Rate: 31%",
-    "Conversion Rate: 4.1%"
-  ].join("\n");
-
-  // Auto-fill samples on first load so users can try instantly
-  (function () {
-    var s = document.getElementById('manual-single');
-    var p = document.getElementById('manual-prev');
-    var c = document.getElementById('manual-curr');
-    if (s && !s.value) s.value = sampleSingle;
-    if (p && !p.value) p.value = samplePrev;
-    if (c && !c.value) c.value = sampleCurr;
-  })();
+  // Metrics boxes start empty — users add their own values.
 </script>
 {% endblock %}

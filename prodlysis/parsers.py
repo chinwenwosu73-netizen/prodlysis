@@ -1,9 +1,10 @@
-"""Parsers for CSV, JSON, and manual-paste metric input.
+"""Parsers for CSV, JSON, manual-paste, and PDF metric input.
 
 All parsers return a list of (metric_key, raw_value) tuples, or None when
 nothing parseable is found. compare.py turns these into normalized metrics.
 """
 
+import base64
 import csv
 import io
 import json
@@ -40,6 +41,159 @@ def _looks_like_header(cell):
 
 
 # ---------------------------------------------------------------------------
+# PDF
+# ---------------------------------------------------------------------------
+def pdf_to_text(payload):
+    """Extract the text content of a PDF report.
+
+    `payload` may be:
+      - bytes of a PDF file
+      - a base64 string of a PDF file
+      - a dict {"text": ...} / {"data": ...} carrying base64 bytes
+      - a dict with {"is_pdf": true, "text": <base64>} (as sent by the client)
+
+    Returns the extracted plain text (as CSV/manual lines) or None when the
+    payload is not a readable PDF.
+    """
+    raw = payload
+    if isinstance(payload, dict):
+        if payload.get("is_pdf") or payload.get("kind") == "pdf":
+            raw = payload.get("text") or payload.get("data") or payload.get("content")
+        else:
+            raw = payload.get("data") or payload.get("content") or payload.get("text")
+
+    if raw is None:
+        return None
+
+    data = raw
+    if isinstance(raw, str):
+        s = raw.strip()
+        if not s:
+            return None
+        # data URI (data:application/pdf;base64,....)
+        if s.startswith("data:"):
+            try:
+                s = s.split(",", 1)[1]
+            except IndexError:
+                return None
+        try:
+            data = base64.b64decode(s, validate=False)
+        except Exception:
+            data = s.encode("utf-8", "ignore")
+
+    if isinstance(data, str):
+        data = data.encode("utf-8", "ignore")
+    if not data or not data[:4] == b"%PDF":
+        return None
+
+    try:
+        from pypdf import PdfReader
+    except Exception:
+        return None
+
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        pages = []
+        for page in reader.pages:
+            txt = page.extract_text() or ""
+            if txt.strip():
+                pages.append(txt)
+        text = "\n".join(pages)
+        return text.strip() or None
+    except Exception:
+        return None
+
+
+def parse_pdf_metrics(payload):
+    """Parse a PDF report directly into a normalized {key: float} metric dict.
+
+    Extracts text with pdf_to_text() then runs the same CSV-then-manual
+    parsing used for other sources, so a PDF that contains a metrics table
+    (e.g. 'Metric,Previous,Current' rows or 'Sessions: 2400' lines) is read
+    the same way as a CSV or pasted report.
+    """
+    text = pdf_to_text(payload)
+    if not text:
+        return None
+    pairs = parse_csv(text) or parse_manual(text)
+    return parsers_pdf_to_metric_dict(pairs) if pairs else None
+
+
+def parsers_pdf_to_metric_dict(pairs):
+    return to_metric_dict(pairs)
+
+
+def parse_pdf_combined(payload):
+    """Parse a two-period PDF report into (prev_dict, curr_dict) or None.
+
+    pypdf usually extracts table cells one-per-line, e.g.::
+
+        Metric
+        Previous
+        Current
+        Sessions
+        2400
+        2650
+        Drop-off Rate
+        42%
+        27%
+        ...
+
+    This reconstructs those ``Metric / prev / curr`` triples (and also falls
+    back to CSV/JSON parsing of the extracted text for other layouts).
+    """
+    text = pdf_to_text(payload)
+    if not text:
+        return None
+
+    # 1) Try the normal CSV / JSON combined paths on the extracted text.
+    parsed = parse_csv_rows(text)
+    if parsed:
+        rows = parsed["rows"]
+        if parsed["mode"] == "long" and all(len(v) >= 2 for _k, v in rows):
+            prev = to_metric_dict([(k, v[0]) for k, v in rows])
+            curr = to_metric_dict([(k, v[1]) for k, v in rows])
+            if prev and curr:
+                return prev, curr
+        if parsed["mode"] == "transposed":
+            n_periods = max((len(v) for v in rows), default=0)
+            if n_periods >= 2:
+                prev = to_metric_dict([(k, v[0]) for k, v in rows if len(v) >= 2])
+                curr = to_metric_dict([(k, v[1]) for k, v in rows if len(v) >= 2])
+                if prev and curr:
+                    return prev, curr
+        # single-period fall through
+
+    # 2) PDF table reconstruction: one token per line -> Metric / prev / curr
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return None
+    # drop a leading title line (not a metric) and any standalone header words
+    metric_lines = []
+    i = 0
+    while i < len(lines):
+        key = resolve_key(lines[i])
+        # a metric label followed by at least two more tokens
+        if key and i + 2 < len(lines):
+            prev_raw = lines[i + 1]
+            curr_raw = lines[i + 2]
+            # The following line is likely a value (not another metric label).
+            if not resolve_key(prev_raw) and not resolve_key(curr_raw):
+                metric_lines.append((key, prev_raw, curr_raw))
+                i += 3
+                continue
+        i += 1
+
+    if metric_lines:
+        prev = to_metric_dict([(k, v) for k, v, _c in metric_lines])
+        curr = to_metric_dict([(k, c) for k, _v, c in metric_lines])
+        if prev and curr:
+            return prev, curr
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # CSV
 # ---------------------------------------------------------------------------
 def parse_csv(text):
@@ -49,6 +203,10 @@ def parse_csv(text):
       - Long format: Metric,Value / Metric,Previous,Current / Metric,June,July
       - Transposed pivot: metrics as column headers, periods as rows
       - Comma, semicolon, or tab delimiters; UTF-8 BOM; quoted values
+
+    NOTE: when a file contains multiple periods, only the LAST period's values
+    are returned here (single-period callers). Use parse_csv_full() for a
+    full previous/current split.
     """
     rows = _read_rows(text)
     if not rows:
@@ -58,6 +216,82 @@ def parse_csv(text):
         return pairs
     pairs = _extract_transposed(rows)
     return pairs or None
+
+
+def parse_csv_rows(text):
+    """Parse CSV and return ALL parsed metric rows with their column layout.
+
+    Returns a dict::
+
+        {
+          "rows": [(key, [raw_col0, raw_col1, ...]), ...],  # one entry per metric
+          "header": ["Metric", "Previous", "Current"],       # first row (or [])
+          "has_header": bool,
+          "mode": "long" | "transposed",
+        }
+
+    This is the authoritative parser used to build BOTH periods from a single
+    Clarity/GA4 style export, so every metric present in the document is
+    included. Rows whose metric label does not resolve to a known metric are
+    skipped. `None` is returned when nothing parseable is found.
+    """
+    rows = _read_rows(text)
+    if not rows:
+        return None
+
+    # --- Long format: metric labels in column 0 ---------------------------
+    long_out = []
+    header = rows[0]
+    has_header = bool(header) and (
+        _looks_like_header(header[0])
+        or (len(header) > 1 and not _is_numeric(header[1]))
+    )
+    body = rows[1:] if has_header else rows
+    for row in body:
+        if not row or not row[0].strip():
+            continue
+        key = resolve_key(row[0])
+        if not key:
+            continue
+        # keep every column value (as raw strings) for this metric
+        vals = [c.strip() for c in row[1:] if c.strip()]
+        if vals:
+            long_out.append((key, vals))
+    if long_out:
+        return {
+            "rows": long_out,
+            "header": header if has_header else [],
+            "has_header": has_header,
+            "mode": "long",
+        }
+
+    # --- Transposed pivot: metrics across the header row -------------------
+    if len(rows) < 2:
+        return None
+    header = rows[0]
+    # skip the period label in col 0, then resolve metric columns
+    start = 1 if not resolve_key(header[0]) and len(header) > 1 else 0
+    metric_cols = [
+        (i, resolve_key(c)) for i, c in enumerate(header)
+        if i >= start and resolve_key(c)
+    ]
+    if len(metric_cols) < 1:
+        return None
+    # gather each metric's values across ALL data rows (each row = one period)
+    per_metric_vals = {key: [] for _i, key in metric_cols}
+    for row in rows[1:]:
+        if not row:
+            continue
+        for i, key in metric_cols:
+            if i < len(row) and row[i].strip():
+                per_metric_vals[key].append(row[i].strip())
+    rebuilt = [(key, vals) for key, vals in per_metric_vals.items() if vals]
+    return {
+        "rows": rebuilt,
+        "header": header,
+        "has_header": True,
+        "mode": "transposed",
+    }
 
 
 def parse_csv_full(text):

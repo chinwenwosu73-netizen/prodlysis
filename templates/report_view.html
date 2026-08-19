@@ -5,7 +5,12 @@
   <div>
     <h1 class="page-title" style="margin-bottom:4px">{{ report.title }}</h1>
     <p class="page-sub" style="margin:0">
-      {{ analysis.previous_label }} vs {{ analysis.current_label }} · {{ report.created_at }}
+      {% if report.type == 'single' %}
+        Single Report Insights
+      {% else %}
+        {{ analysis.previous_label }} vs {{ analysis.current_label }}
+      {% endif %}
+      · {{ report.created_at }}
     </p>
   </div>
   <div class="row">
